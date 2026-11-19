@@ -26,6 +26,21 @@ tokenRateLimits → TokenRateLimitPolicy; rateLimit → RateLimitPolicy. No rate
 
 Use the MaaSModelRef modality enum being developed by the MaaS team for model classification, subscription validation, and dashboard telemetry filtering. Token-limit compatibility must be capability-aware: reject unsupported token limits for rerank-only endpoints, while preserving existing embedding configurations that use tokenRateLimits. Request quotas are allowed across modalities. This proposal does not specify or introduce an InferenceService annotation, automatic discovery watch, or new modality source.
 
+**Validation Logic (MaaSSubscriptionReconciler):**
+
+```python
+if (
+    model_ref.modality == "rerank"
+    and subscription_model_ref.tokenRateLimits
+):
+    raise ValidationError(
+        "tokenRateLimits is not supported for rerank models. "
+        "Use rateLimit for request-based quotas."
+    )
+```
+
+This ensures rerank models use request-based quotas while preserving token limits for chat and embedding models.
+
 ### 4. Gateway routing and authorization
 
 Reuse existing AI Gateway route and Kuadrant AuthPolicy for model endpoints including /v1/rerank, subject to deployment coverage. Require MaaS API-key authentication and subscription authorization. Do not generate additional reranker-specific HTTPRoutes by default.
